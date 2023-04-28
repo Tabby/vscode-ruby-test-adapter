@@ -1,0 +1,153 @@
+{
+  "definitions": {
+    "testItem": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "uri",
+        "range"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/testId"
+        },
+        "description": {
+          "$ref": "#/definitions/testDescription"
+        },
+        "label": {
+          "$ref": "#/definitions/testLabel"
+        },
+        "sortText": {
+          "$ref": "#/definitions/testSortText"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testTag"
+          }
+        },
+        "uri": {
+          "$ref": "#/definitions/testUri"
+        },
+        "error": {
+          "$ref": "#/definitions/testError"
+        },
+        "range": {
+          "$ref": "#/definitions/range"
+        }
+      },
+      "additionalProperties": false
+    },
+    "testGroup": {
+      "type": "object",
+      "required": [
+        "id",
+        "label",
+        "children",
+        "range"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/testId"
+        },
+        "description": {
+          "$ref": "#/definitions/testDescription"
+        },
+        "label": {
+          "$ref": "#/definitions/testLabel"
+        },
+        "sortText": {
+          "$ref": "#/definitions/testSortText"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testTag"
+          }
+        },
+        "uri": {
+          "$ref": "#/definitions/testUri"
+        },
+        "error": {
+          "$ref": "#/definitions/testError"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testItem"
+          }
+        },
+        "range": {
+          "$ref": "#/definitions/range"
+        }
+      },
+      "additionalProperties": false
+    },
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "character"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer"
+        },
+        "character": {
+          "type": "integer"
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/position"
+        },
+        "end": {
+          "$ref": "#/definitions/position"
+        }
+      }
+    },
+    "testId": {
+      "type": "string",
+      "description": "Identifier for the test/group. Must be unique among its parent's direct children"
+    },
+    "testLabel": {
+      "type": "string",
+      "description": "Display name describing the test case/group"
+    },
+    "testDescription": {
+      "type": "string",
+      "description": "Optional description that appears next to the label"
+    },
+    "testSortText": {
+      "type": "string",
+      "description": "A string that should be used when comparing this item with other items. When falsy the label is used"
+    },
+    "testTag": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the test tag. TestTag instances with the same ID are considered to be identical"
+        }
+      },
+      "additionalProperties": false
+    },
+    "testUri": {
+      "type": "string",
+      "description": "URI this TestItem is associated with. May be a file or directory"
+    },
+    "testError": {
+      "type": "string",
+      "description": "Optional error encountered while loading the test. Note that this is not a test result and should only be used to represent errors in test discovery, such as syntax errors"
+    }
+  }
+}

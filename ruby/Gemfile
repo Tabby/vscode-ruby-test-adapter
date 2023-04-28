@@ -2,6 +2,7 @@ source 'https://rubygems.org'
 
 group :development, :test do
   gem "bundler"
+  gem "json-schema", require: false
   gem "rake"
   gem "minitest"
   gem "rspec"

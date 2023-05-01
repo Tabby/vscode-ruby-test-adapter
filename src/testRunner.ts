@@ -223,7 +223,7 @@ export class TestRunner implements vscode.Disposable {
    */
   private async runTestFramework (testCommand: { command: string, args: string[] }, testRun: vscode.TestRun, profile?: vscode.TestRunProfile): Promise<void> {
     const spawnArgs: childProcess.SpawnOptions = {
-      cwd: this.workspace?.uri.fsPath,
+      cwd: await this.manager.config.findParentGemfileForTests(this.log, testCommand.args) || this.workspace?.uri.fsPath,
       shell: true,
       env: this.manager.config.getProcessEnv()
     };

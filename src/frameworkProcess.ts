@@ -102,12 +102,10 @@ export class FrameworkProcess implements vscode.Disposable {
         if (data.startsWith('Fast Debugger') && onDebugStarted) {
           log.info('Notifying debug session that test process is ready to debug');
           onDebugStarted()
+        } else if (this.testRunStarted) {
+          log.warn('%s', data);
         } else {
-	        if (this.testRunStarted) {
-            log.warn('%s', data);
-          } else {
-            this.preTestErrorLines.push(data)
-          }
+          this.preTestErrorLines.push(data)
         }
       })
 
@@ -148,6 +146,8 @@ export class FrameworkProcess implements vscode.Disposable {
     let log = this.log.getChildLogger({label: 'onDataReceived'})
 
     let getTest = (testId: string): vscode.TestItem => {
+      // TODO: Pass dirs between workspace folder and gemfile folder to normaliseTestId
+      //if (this.spawnArgs.cwd != this.
       testId = this.testManager.normaliseTestId(testId)
       return this.testManager.getOrCreateTestItem(testId)
     }

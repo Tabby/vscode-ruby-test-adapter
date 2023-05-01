@@ -149,7 +149,7 @@ suite('Extension Test for Minitest', function() {
       )
 
       // Resolve a file (e.g. by clicking on it in the test explorer)
-      await testLoader.loadTestItem(absTestItem)
+      await testLoader.enqueueItemsForLoading(absTestItem)
 
       // Tests in that file have now been added to suite
       testItemCollectionMatches(testController.items,

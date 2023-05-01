@@ -141,8 +141,27 @@ export class TestLoader implements vscode.Disposable {
    * @param testItem the test item to be loaded
    * @returns the loaded test item
    */
-  public async loadTestItem(testItem: vscode.TestItem): Promise<vscode.TestItem> {
-    return await this.resolveQueue.enqueue(testItem)
+  public async enqueueItemsForLoading(testItems?: vscode.TestItem | vscode.TestItem[], cancellationToken?: vscode.CancellationToken): Promise<void> {
+    let cancellationListener = cancellationToken?.onCancellationRequested((_) => { this.cancellationTokenSource.cancel() })
+    if (cancellationListener) {
+      this.disposables.push(cancellationListener)
+    }
+    try {
+      if (Array.isArray(testItems)) {
+        let enqueuedItems = []
+        for (const item of testItems) {
+          enqueuedItems.push(this.resolveQueue.enqueue(item))
+        }
+        await Promise.all(enqueuedItems)
+      } else {
+        return await this.resolveQueue.enqueue(testItems)
+      }
+    } finally {
+      if (cancellationListener) {
+        cancellationListener.dispose()
+        this.disposables.splice(this.disposables.indexOf(cancellationListener), 1)
+      }
+    }
   }
 
   private configWatcher(): vscode.Disposable {

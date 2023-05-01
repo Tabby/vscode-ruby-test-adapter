@@ -72,6 +72,7 @@ export class TestSuiteManager {
     if (testId.startsWith(`.${path.sep}`)) {
       testId = testId.substring(2)
     }
+    log.debug('Relative', { id: testId, testDir: this.config.getRelativeTestDirectory()})
     if (testId.startsWith(this.config.getRelativeTestDirectory())) {
       testId = testId.replace(this.config.getRelativeTestDirectory(), '')
     }

@@ -169,7 +169,7 @@ suite('Extension Test for RSpec', function() {
       )
 
       // Resolve a file (e.g. by clicking on it in the test explorer)
-      await testLoader.loadTestItem(absSpecItem)
+      await testLoader.enqueueItemsForLoading(absSpecItem)
 
       // Tests in that file have now been added to suite
       testItemCollectionMatches(testController.items,

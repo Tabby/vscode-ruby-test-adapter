@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import * as childProcess from 'child_process';
-import { IVSCodeExtLogger } from '@vscode-logging/logger';
+import { IChildLogger, IVSCodeExtLogger } from '@vscode-logging/logger';
 
 export abstract class Config {
 
@@ -11,6 +11,8 @@ export abstract class Config {
   public readonly rubyScriptPath: string;
 
   public readonly workspaceFolder?: vscode.WorkspaceFolder;
+
+  public gemfilePaths?: string[];
 
   /**
    * @param context Either a vscode.ExtensionContext with the extensionUri field set to the location of the extension,
@@ -55,6 +57,53 @@ export abstract class Config {
    */
   public getAbsoluteTestDirectory(): string {
     return path.resolve(this.workspaceFolder?.uri.fsPath || '.', this.getRelativeTestDirectory())
+  }
+
+  public async findGemfiles(log: IChildLogger): Promise<string[]> {
+    if (this.gemfilePaths) return this.gemfilePaths
+
+    let cwd = this.workspaceFolder?.uri.fsPath || path.resolve('.')
+    let gemfilePatterns = [
+      // new vscode.RelativePattern(cwd, path.join('**', 'Gemfile')),
+      // new vscode.RelativePattern(cwd, path.join('**', 'gems.rb'))
+      '**/Gemfile',
+      '**/gems.rb'
+    ]
+    let gemfilePaths: string[] = []
+    for (const gemfilePattern of gemfilePatterns) {
+      let uris = await vscode.workspace.findFiles(gemfilePattern, '**/gems/*')
+      log.debug('Found gemfile uris', uris)
+      gemfilePaths = gemfilePaths.concat(uris.map(uri => path.relative(cwd, uri.fsPath)))
+    }
+    this.gemfilePaths = gemfilePaths
+    return gemfilePaths
+  }
+
+  public async findParentGemfileForTests(log: IChildLogger, testPaths: string[]) {
+    let gemfilePaths = await this.findGemfiles(log)
+    if (gemfilePaths.length == 1) {
+      let gemfile = gemfilePaths[0]
+      log.debug('Only one gemfile found: %s', gemfile)
+      return path.resolve(path.dirname(gemfile))
+    } else if (gemfilePaths.length > 1) {
+      log.debug('Multiple gemfiles found', gemfilePaths)
+      for (const gemfile of gemfilePaths) {
+        let gemfileDir = path.resolve(path.dirname(gemfile))
+        let isParent = true
+        for (const testPath of testPaths) {
+          const relative = path.relative(gemfileDir, testPath);
+          if (!relative || relative.startsWith('..') || path.isAbsolute(relative)) {
+            isParent = false
+            break
+          }
+          if (isParent) return gemfileDir
+        }
+      }
+    } else {
+      log.debug('No gemfiles found')
+    }
+    log.warn('No gemfile found that is a parent of tests to be run')
+    return undefined
   }
 
   /**

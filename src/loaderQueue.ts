@@ -8,7 +8,7 @@ import { IChildLogger } from '@vscode-logging/logger';
  * reject: Function to call if there is an error loading this test (or the batch it is part of), to reject the associated promise
  */
 export type QueueItem = {
-  item: vscode.TestItem,
+  item?: vscode.TestItem,
   resolve: () => void,
   reject: (reason?: any) => void
 }
@@ -66,17 +66,21 @@ export class LoaderQueue implements vscode.Disposable {
    * @returns A promise that is resolved once the test item has been loaded, or which is rejected if there is
    *   an error while loading the item (or the batch containing the item)
    */
-  public enqueue(item: vscode.TestItem): Promise<vscode.TestItem> {
-    this.log.debug('enqueing item to resolve: %s', item.id)
+  public enqueue(item?: vscode.TestItem): Promise<void> {
+    this.log.debug('enqueing item to resolve: %s', item?.id || 'all tests')
     // Create queue item with empty functions
     let queueItem: QueueItem = {
       item: item,
       resolve: () => {},
-      reject: () => {},
+      reject: () => {}
     }
-    let itemPromise = new Promise<vscode.TestItem>((resolve, reject) => {
+    if (!item) {
+      // Load all tests, so clear out anything already in the queue
+      this.queue.clear()
+    }
+    let itemPromise = new Promise<void>((resolve, reject) => {
       // Set the resolve & reject functions in the queue item to resolve/reject this promise
-      queueItem["resolve"] = () => resolve(item)
+      queueItem["resolve"] = () => resolve()
       queueItem["reject"] = reject
     })
     this.queue.add(queueItem)
@@ -115,13 +119,19 @@ export class LoaderQueue implements vscode.Disposable {
         let queueItems = Array.from(this.queue)
         this.queue.clear()
 
-        let items = queueItems.map(x => x["item"])
-        this.log.debug('worker resolving items', items.map(x => x.id))
         try {
-          // Load tests for items in queue
-          await this.processItems(items)
-          // Resolve promises associated with items in queue that have now been loaded
-          queueItems.map(x => x["resolve"]())
+          let allTestsItem = queueItems.filter(x => x["item"] == undefined).at(0)
+          if (allTestsItem) {
+            await this.processItems()
+            allTestsItem.resolve
+          } else {
+            let items = queueItems.map(x => x["item"])
+            this.log.debug('worker resolving items', items.map(x => x?.id || 'all tests'))
+            // Load tests for items in queue
+            await this.processItems(items as vscode.TestItem[])
+            // Resolve promises associated with items in queue that have now been loaded
+            queueItems.map(x => x["resolve"]())
+          }
         } catch (err) {
           this.log.error("Error resolving tests from queue", err)
           // Reject promises associated with items in queue that we were trying to load

@@ -92,13 +92,20 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(profiles.debugProfile);
     context.subscriptions.push(factory);
 
+    controller.refreshHandler = async cancellationToken => {
+      controller.items.replace([])
+      factory.getLoader().dispose()
+      await factory.getLoader().discoverAllFilesInWorkspace();
+      await factory.getLoader().enqueueItemsForLoading(undefined, cancellationToken)
+    }
+
     controller.resolveHandler = async test => {
       log.debug('resolveHandler called', test)
       if (!test) {
         await factory.getLoader().discoverAllFilesInWorkspace();
       } else if (test.canResolveChildren && test.id.endsWith(".rb")) {
         // Only load files - folders are handled by FileWatchers, and contexts will be loaded when their file is loaded/modified
-        await factory.getLoader().loadTestItem(test);
+        await factory.getLoader().enqueueItemsForLoading(test);
       }
     };
 

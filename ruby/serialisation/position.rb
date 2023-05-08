@@ -4,7 +4,7 @@ require "json"
 
 module Serialisation
   class Position
-    def initialize(line:, character:)
+    def initialize(line:, character: 0)
       raise ArgumentError, "line must be an integer" unless line.is_a?(Integer)
       raise ArgumentError, "character must be an integer" unless character.is_a?(Integer)
 

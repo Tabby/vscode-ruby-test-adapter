@@ -22,7 +22,11 @@ module VSCode
 
     def list(io = $stdout)
       io.sync = true if io.respond_to?(:"sync=")
-      data = { version: ::Minitest::VERSION, examples: tests.all }
+      data = {
+        runner: "minitest",
+        version: ::Minitest::VERSION,
+        items: tests.all.map(&:as_json)
+      }
       json = ENV.key?("PRETTY") ? JSON.pretty_generate(data) : JSON.generate(data)
       io.puts "START_OF_TEST_JSON#{json}END_OF_TEST_JSON"
     end

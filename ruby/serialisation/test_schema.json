@@ -2,6 +2,7 @@
   "definitions": {
     "testItem": {
       "type": "object",
+      "description": "An item to be shown in the 'test explorer' view. Can represent either a test suite or a test itself",
       "required": [
         "id",
         "label",
@@ -35,51 +36,83 @@
         },
         "range": {
           "$ref": "#/definitions/range"
-        }
-      },
-      "additionalProperties": false
-    },
-    "testGroup": {
-      "type": "object",
-      "required": [
-        "id",
-        "label",
-        "children",
-        "range"
-      ],
-      "properties": {
-        "id": {
-          "$ref": "#/definitions/testId"
-        },
-        "description": {
-          "$ref": "#/definitions/testDescription"
-        },
-        "label": {
-          "$ref": "#/definitions/testLabel"
-        },
-        "sortText": {
-          "$ref": "#/definitions/testSortText"
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/testTag"
-          }
-        },
-        "uri": {
-          "$ref": "#/definitions/testUri"
-        },
-        "error": {
-          "$ref": "#/definitions/testError"
         },
         "children": {
           "type": "array",
           "items": {
             "$ref": "#/definitions/testItem"
           }
+        }
+      },
+      "additionalProperties": false
+    },
+    "testStatus": {
+      "type": "object",
+      "required": [
+        "test",
+        "result"
+      ],
+      "properties": {
+        "test": {
+          "$ref": "#/definitions/testItem"
         },
+        "duration": {
+          "description": "How long the test took to execute, in milliseconds",
+          "type": "number"
+        },
+        "message": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testMessage"
+          }
+        },
+        "result": {
+          "type": "string",
+          "description": "The result of running a test. If 'errored' or 'failed', it must have at least one message",
+          "enum": ["enqueued", "errored", "failed", "passed", "skipped", "started"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "testMessage": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Human readable message text to display. Can use Markdown formatting"
+        },
+        "location": {
+          "$ref": "#/definitions/location",
+          "description": "The location associated with the message"
+        },
+        "actualOutput": {
+          "type": "string",
+          "description": "Actual test output. If given with expectedOutput, a diff view will be shown"
+        },
+        "expectedOutput": {
+          "type": "string",
+          "description": "Expected test output. If given with actualOutput, a diff view will be shown"
+        },
+        "additionalProperties": false
+      }
+    },
+    "location": {
+      "type": "object",
+      "required": [
+        "uri",
+        "range"
+      ],
+      "properties": {
         "range": {
-          "$ref": "#/definitions/range"
+          "$ref": "#/definitions/range",
+          "description": "The document range of this location"
+        },
+        "uri": {
+          "$ref": "#/definitions/testUri",
+          "description": "The resource identifier of this location"
         }
       },
       "additionalProperties": false

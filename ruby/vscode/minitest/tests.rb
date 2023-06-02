@@ -1,8 +1,4 @@
 require "rake"
-require "uri"
-require "serialisation/position"
-require "serialisation/range"
-require "serialisation/test_item"
 
 module VSCode
   module Minitest
@@ -38,47 +34,30 @@ module VSCode
 
         tests = []
         ::Minitest::Runnable.runnables.map do |runnable|
-          file_name = nil
-          puts "runnable #{runnable.name}\n"
           file_tests = runnable.runnable_methods.map do |test_name|
-            puts "test #{test_name}\n"
             path, line = runnable.instance_method(test_name).source_location
-            unless file_name
-              index = path.rindex(/[\\\/]/)
-              file_name = path.slice(index + 1, path.length - index)
-            end
             full_path = File.expand_path(path, VSCode.project_root)
             path = full_path.gsub(VSCode.project_root.to_s, ".")
             path = "./#{path}" unless path.match?(/^\./)
             description = test_name.gsub(/^test_[:\s]*/, "")
             description = description.tr("_", " ") unless description.match?(/\s/)
 
-            puts "end\n"
-            ::Serialisation::TestItem.new(
-              id: test_name,
-              label: description,
-              uri: URI.parse("file:///#{full_path}"),
-              range: ::Serialisation::Range.new(
-                  start_pos: ::Serialisation::Position.new(line: line),
-                  end_pos: ::Serialisation::Position.new(line: line),
-                ),
-              sort_text: line.to_s
-            )
+            {
+              description: description,
+              full_description: description,
+              file_path: path,
+              full_path: full_path,
+              line_number: line,
+              klass: runnable.name,
+              method: test_name,
+              runnable: runnable
+            }
           end
-
-          unless file_tests.length.zero?
-            file_item = ::Serialisation::TestItem.new(
-              id: file_name,
-              label: file_name,
-              uri: file_tests.first.uri,
-              range: ::Serialisation::Range.new(
-                start_pos: ::Serialisation::Position.new(line: 0),
-                end_pos: ::Serialisation::Position.new(line: 0),
-              ),
-              children: file_tests,
-            )
-            tests << file_item
+          file_tests.sort_by! { |t| t[:line_number] }
+          file_tests.each do |t|
+            t[:id] = "#{t[:file_path]}[#{t[:line_number]}]"
           end
+          tests.concat(file_tests)
         end
         tests
       end

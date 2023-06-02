@@ -4,8 +4,10 @@ require "json"
 
 module Serialisation
   class Range
-    def initialize(start_pos:, end_pos:)
+    def initialize(start_pos:, end_pos: nil)
       raise ArgumentError, "start_pos must be a Position" unless start_pos.is_a?(Serialisation::Position)
+
+      end_pos = start_pos if end_pos.nil?
       raise ArgumentError, "end_pos must be a Position" unless end_pos.is_a?(Serialisation::Position)
 
       @start_pos = start_pos

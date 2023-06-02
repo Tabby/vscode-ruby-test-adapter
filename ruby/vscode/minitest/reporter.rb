@@ -1,9 +1,25 @@
 # frozen_string_literal: true
 
+require "serialisation/location"
+require "serialisation/position"
+require "serialisation/range"
+require "serialisation/status/base"
+require "serialisation/status/enqueued"
+require "serialisation/status/errored"
+require "serialisation/status/failed"
+require "serialisation/status/passed"
+require "serialisation/status/skipped"
+require "serialisation/status/started"
+require "serialisation/status/test_message"
+require "serialisation/test_item"
+require "uri"
+
 module VSCode
   module Minitest
     class Reporter < ::Minitest::Reporter
       attr_accessor :assertions, :count, :results, :start_time, :total_time, :failures, :errors, :skips
+
+      ASSERTION_REGEX = /(?:(?<msg>.*)\.)?\s*Expected:? (?<exp>.*)\s*(?:Actual:|to be) (?<act>.*)/.freeze
 
       def initialize(io = $stdout, options = {})
         super
@@ -19,16 +35,16 @@ module VSCode
 
       def prerecord(klass, meth)
         data = VSCode::Minitest.tests.find_by(klass: klass.to_s, method: meth)
-        io.puts "\nRUNNING: #{data[:id]}\n"
+        io.puts "#{::Serialisation::Status::Started.new(test: VSCode.test_item(data)).to_json}\n"
       end
 
       def record(result)
         self.count += 1
         self.assertions += result.assertions
         results << result
-        data = vscode_result(result, false)
+        data = vscode_result(result)
 
-        io.puts "#{data[:status]}#{data[:exception]}: #{data[:id]}\n"
+        io.puts "#{data.to_json}\n"
       end
 
       def report
@@ -58,48 +74,46 @@ module VSCode
           },
           summary_line: "Total time: #{total_time}, Runs: #{count}, Assertions: #{assertions}, " \
                         "Failures: #{failures}, Errors: #{errors}, Skips: #{skips}",
-          examples: results.map { |r| vscode_result(r, true) }
+          examples: results.map { |r| vscode_result(r).as_json }
         }
       end
 
-      def vscode_result(result, is_report)
-        base = VSCode::Minitest.tests.find_by(klass: result.klass, method: result.name).dup
-
-        base[:status] = vscode_status(result, is_report)
-        base[:pending_message] = result.skipped? ? result.failure.message : nil
-        base[:exception] = vscode_exception(result, base, is_report)
-        base[:duration] = result.time
-        base.compact
-      end
-
-      def vscode_status(result, is_report)
+      def vscode_result(result)
+        data = VSCode::Minitest.tests.find_by(klass: result.klass, method: result.name).dup
+        test = VSCode.test_item(data)
         if result.skipped?
-          status = 'skipped'
+          # Not sure if there's a better place to put this message
+          test.error = result.failure.message
+          return ::Serialisation::Status::Skipped.new(test: test)
         elsif result.passed?
-          status = 'passed'
+          return ::Serialisation::Status::Passed.new(test: test, duration: result.time)
         else
-          e = result.failure.exception
-          status = e.class.name == ::Minitest::UnexpectedError.name ? 'errored' : 'failed'
+          msg = [vscode_test_message(result, data)]
+          if result.failure.exception.class.name == ::Minitest::UnexpectedError.name
+            return ::Serialisation::Status::Errored.new(test: test, message: msg, duration: result.time)
+          else
+            return ::Serialisation::Status::Failed.new(test: test, message: msg, duration: result.time)
+          end
         end
-        is_report ? status : status.upcase
       end
 
-      def vscode_exception(result, data, is_report)
+      def vscode_test_message(result, data)
         return if result.passed? || result.skipped?
 
         err = result.failure.exception
         backtrace = expand_backtrace(err.backtrace)
-        if is_report
-          {
-            class: err.class.name,
-            message: err.message,
-            backtrace: clean_backtrace(backtrace),
-            full_backtrace: backtrace,
-            position: exception_position(backtrace, data[:full_path]) || data[:line_number]
-          }
-        else
-          "(#{err.class.name}:#{err.message.tr("\n", ' ').strip})"
+        msg = ::Serialisation::Status::TestMessage.new(
+          message: "#{err.message}\n#{clean_backtrace(backtrace).join("\n")}",
+          location: exception_location(backtrace, data)
+        )
+
+        diff_match = err.message.match(ASSERTION_REGEX)
+        if diff_match
+          msg.expected_output = diff_match[:exp]
+          msg.actual_output = diff_match[:act]
         end
+
+        msg
       end
 
       def expand_backtrace(backtrace)
@@ -121,11 +135,19 @@ module VSCode
         end
       end
 
-      def exception_position(backtrace, file)
-        line = backtrace.find { |frame| frame.start_with?(file) }
-        return unless line
+      def exception_location(backtrace, data)
+        frame = backtrace.find { |frame| frame.start_with?(data[:full_path]) }
+        if frame
+          path, line = frame.split(':')
+        else
+          path = data[:full_path]
+          line = data[:line_number] ? data[:line_number] : 1
+        end
 
-        line.split(':')[1].to_i
+        ::Serialisation::Location.new(
+          uri: URI.parse("file:///#{path}"),
+          range: ::Serialisation::Range.new(start_pos: ::Serialisation::Position.new(line: line - 1)),
+        )
       end
     end
   end

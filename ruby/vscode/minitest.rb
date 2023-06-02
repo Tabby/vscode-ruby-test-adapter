@@ -17,6 +17,19 @@ module VSCode
     @project_root ||= Pathname.new(Dir.pwd)
   end
 
+  def test_item(test)
+    line = test[:line_number] || 1
+    ::Serialisation::TestItem.new(
+      id: test[:id],
+      label: test[:description],
+      uri: URI.parse("file:///#{test[:full_path]}"),
+      range: ::Serialisation::Range.new(
+        start_pos: ::Serialisation::Position.new(line: line - 1),
+      ),
+      sort_text: (test[:line_number] || test[:id]).to_s
+    )
+  end
+
   module Minitest
     module_function
 
@@ -25,7 +38,7 @@ module VSCode
       data = {
         runner: "minitest",
         version: ::Minitest::VERSION,
-        items: tests.all.map(&:as_json)
+        examples: tests.all.map { |t| VSCode.test_item(t).as_json }
       }
       json = ENV.key?("PRETTY") ? JSON.pretty_generate(data) : JSON.generate(data)
       io.puts "START_OF_TEST_JSON#{json}END_OF_TEST_JSON"

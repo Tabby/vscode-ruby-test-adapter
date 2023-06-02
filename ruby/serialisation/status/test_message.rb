@@ -23,7 +23,8 @@ module Serialisation
         @expected_output = expected_output
       end
 
-      attr_reader :message, :location, :actual_output, :expected_output
+      attr_reader :message, :location
+      attr_accessor :actual_output, :expected_output
 
       def as_json(*)
         {

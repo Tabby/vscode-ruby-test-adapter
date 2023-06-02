@@ -40,7 +40,8 @@ module Serialisation
       @children = children
     end
 
-    attr_reader :id, :label, :uri, :range, :description, :sort_text, :error, :tags, :children
+    attr_reader :id, :label, :uri, :range, :description, :sort_text, :tags, :children
+    attr_accessor :error
 
     def as_json(*)
       {

@@ -6,7 +6,7 @@ require "uri"
 module Serialisation
   class TestItem
     def initialize(id:, label:, uri: , range:,
-                   description: nil, sort_text: nil, error: nil, tags: [], children: [])
+                   description: nil, sort_text: nil, error: nil, tags: [], children: [], parent_ids: [])
       raise ArgumentError, "id must be a String" unless id.is_a?(String)
       raise ArgumentError, "label must be a String" unless label.is_a?(String)
       raise ArgumentError, "uri must be a URI" unless uri.is_a?(URI::Generic)
@@ -38,10 +38,11 @@ module Serialisation
       @error = error
       @tags = tags
       @children = children
+      @parent_ids = parent_ids
     end
 
     attr_reader :id, :label, :uri, :range, :description, :sort_text, :tags, :children
-    attr_accessor :error
+    attr_accessor :error, :parent_ids
 
     def as_json(*)
       {
@@ -54,6 +55,7 @@ module Serialisation
         "error" => error,
         "tags" => tags,
         "children" => children.map(&:as_json),
+        "parent_ids" => parent_ids,
       }
     end
 

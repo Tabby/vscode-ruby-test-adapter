@@ -19,6 +19,7 @@ module VSCode
     class Reporter < ::Minitest::Reporter
       attr_accessor :assertions, :count, :results, :start_time, :total_time, :failures, :errors, :skips
 
+      # TODO: Hook Minitest::Assertions.things_to_diff to get the expected/actual values more reliably?
       ASSERTION_REGEX = /(?:(?<msg>.*)\.)?\s*Expected:? (?<exp>.*)\s*(?:Actual:|to be) (?<act>.*)/.freeze
 
       def initialize(io = $stdout, options = {})

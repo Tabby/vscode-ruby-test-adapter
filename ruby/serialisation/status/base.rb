@@ -5,8 +5,9 @@ require "json"
 module Serialisation
   module Status
     class Base
-      def initialize(result:, test:, duration: nil, message: [])
-        raise ArgumentError, "test must be a TestItem" unless test.is_a?(Serialisation::TestItem)
+      def initialize(result:, test_id:, test_item: nil, duration: nil, message: [])
+        raise ArgumentError, "test_id must be a String" unless test_id.is_a? String
+        raise ArgumentError, "test_item must be a TestItem" unless test_item.nil? || test_item.is_a?(Serialisation::TestItem)
         if duration
           raise ArgumentError, "duration must be a number" unless duration.is_a?(Numeric)
         end
@@ -16,12 +17,13 @@ module Serialisation
         end
 
         @result = result
-        @test = test
+        @test_id = test_id
+        @test_item = test_item
         @duration = duration
         @message = message
       end
 
-      attr_reader :result, :test, :duration, :message
+      attr_reader :result, :test_id, :test_item, :duration, :message
 
       def json_keys
         raise "Not implemented"
@@ -30,10 +32,11 @@ module Serialisation
       def as_json(*)
         {
           "result" => result,
-          "test" => test.as_json,
+          "test_id" => test_id,
+          "test_item" => test_item&.as_json || nil,
           "duration" => duration,
           "message" => message.map(&:as_json),
-      }.slice(*json_keys)
+        }.slice(*json_keys)
       end
 
       def to_json(*args)

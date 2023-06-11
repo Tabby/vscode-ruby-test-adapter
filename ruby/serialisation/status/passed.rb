@@ -5,10 +5,10 @@ require "json"
 module Serialisation
   module Status
     class Passed < Base
-      KEYS = %w[result test duration].freeze
+      KEYS = %w[result test_id test_item duration].freeze
 
-      def initialize(test:, duration: nil)
-        super(result: "passed", test: test, duration: duration)
+      def initialize(test_id:, test_item: nil, duration: nil)
+        super(result: "passed", test_id: test_id, test_item: test_item, duration: duration)
       end
 
       def json_keys

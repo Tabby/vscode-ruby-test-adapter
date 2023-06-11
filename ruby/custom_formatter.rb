@@ -126,8 +126,7 @@ class CustomFormatter < RSpec::Core::Formatters::BaseFormatter
     # output.write "RUNNING: #{notification.group.id}\n"
     # dump_notification(notification)
 
-    item = create_group_item(notification.group)
-    output.write "#{::Serialisation::Status::Started.new(test: item).to_json}\n"
+    output.write "#{group_started_status(notification.group).to_json}\n"
   end
 
   private
@@ -165,37 +164,53 @@ class CustomFormatter < RSpec::Core::Formatters::BaseFormatter
 
   def example_status(example)
     if example.exception
-      failed_status(example)
+      failed_status(example, true)
     elsif example.execution_result.status == :pending
-      skipped_status(example)
+      skipped_status(example, true)
     else
-      passed_status(example)
+      passed_status(example, true)
     end
   end
 
   def started_status(example)
-    ::Serialisation::Status::Started.new(test: test_item(example))
+    ::Serialisation::Status::Started.new(test_id: example.id)
   end
 
-  def failed_status(example)
+  def group_started_status(group)
+    ::Serialisation::Status::Started.new(
+      test_id: group.id,
+      test_item: create_group_item(group),
+    )
+  end
+
+  def failed_status(example, is_summary = false)
     klass = exception_is_error?(example.exception.class) ? ::Serialisation::Status::Errored : ::Serialisation::Status::Failed
     klass.new(
-      test: test_item(example),
+      test_id: example.id,
+      test_item: is_summary ? test_item(example) : nil,
       message: test_message(example),
       duration: example.execution_result.run_time,
     )
   end
 
-  def skipped_status(example)
-    item = test_item(example)
-    # Not sure if there's a better place to put this message
-    item.error = example.execution_result.pending_message,
-    ::Serialisation::Status::Skipped.new(test: item)
+  def skipped_status(example, is_summary = false)
+    if is_summary
+      item = test_item(example)
+      # Not sure if there's a better place to put this message
+      item.error = example.execution_result.pending_message,
+      ::Serialisation::Status::Skipped.new(
+        test_id: example.id,
+        test_item: item,
+      )
+    else
+      ::Serialisation::Status::Skipped.new(test_id: example.id)
+    end
   end
 
-  def passed_status(example)
+  def passed_status(example, is_summary = false)
     ::Serialisation::Status::Passed.new(
-      test: test_item(example),
+      test_id: example.id,
+      test_item: is_summary ? test_item(example) : nil,
       duration: example.execution_result.run_time,
     )
   end

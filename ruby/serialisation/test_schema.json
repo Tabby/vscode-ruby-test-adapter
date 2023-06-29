@@ -1,0 +1,186 @@
+{
+  "definitions": {
+    "testItem": {
+      "type": "object",
+      "description": "An item to be shown in the 'test explorer' view. Can represent either a test suite or a test itself",
+      "required": [
+        "id",
+        "label",
+        "uri",
+        "range"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/definitions/testId"
+        },
+        "description": {
+          "$ref": "#/definitions/testDescription"
+        },
+        "label": {
+          "$ref": "#/definitions/testLabel"
+        },
+        "sortText": {
+          "$ref": "#/definitions/testSortText"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testTag"
+          }
+        },
+        "uri": {
+          "$ref": "#/definitions/testUri"
+        },
+        "error": {
+          "$ref": "#/definitions/testError"
+        },
+        "range": {
+          "$ref": "#/definitions/range"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testItem"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "testStatus": {
+      "type": "object",
+      "required": [
+        "test",
+        "result"
+      ],
+      "properties": {
+        "test": {
+          "$ref": "#/definitions/testItem"
+        },
+        "duration": {
+          "description": "How long the test took to execute, in milliseconds",
+          "type": "number"
+        },
+        "message": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/testMessage"
+          }
+        },
+        "result": {
+          "type": "string",
+          "description": "The result of running a test. If 'errored' or 'failed', it must have at least one message",
+          "enum": ["enqueued", "errored", "failed", "passed", "skipped", "started"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "testMessage": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string",
+          "description": "Human readable message text to display. Can use Markdown formatting"
+        },
+        "location": {
+          "$ref": "#/definitions/location",
+          "description": "The location associated with the message"
+        },
+        "actualOutput": {
+          "type": "string",
+          "description": "Actual test output. If given with expectedOutput, a diff view will be shown"
+        },
+        "expectedOutput": {
+          "type": "string",
+          "description": "Expected test output. If given with actualOutput, a diff view will be shown"
+        },
+        "additionalProperties": false
+      }
+    },
+    "location": {
+      "type": "object",
+      "required": [
+        "uri",
+        "range"
+      ],
+      "properties": {
+        "range": {
+          "$ref": "#/definitions/range",
+          "description": "The document range of this location"
+        },
+        "uri": {
+          "$ref": "#/definitions/testUri",
+          "description": "The resource identifier of this location"
+        }
+      },
+      "additionalProperties": false
+    },
+    "position": {
+      "type": "object",
+      "required": [
+        "line",
+        "character"
+      ],
+      "properties": {
+        "line": {
+          "type": "integer"
+        },
+        "character": {
+          "type": "integer"
+        }
+      }
+    },
+    "range": {
+      "type": "object",
+      "required": [
+        "start",
+        "end"
+      ],
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/position"
+        },
+        "end": {
+          "$ref": "#/definitions/position"
+        }
+      }
+    },
+    "testId": {
+      "type": "string",
+      "description": "Identifier for the test/group. Must be unique among its parent's direct children"
+    },
+    "testLabel": {
+      "type": "string",
+      "description": "Display name describing the test case/group"
+    },
+    "testDescription": {
+      "type": "string",
+      "description": "Optional description that appears next to the label"
+    },
+    "testSortText": {
+      "type": "string",
+      "description": "A string that should be used when comparing this item with other items. When falsy the label is used"
+    },
+    "testTag": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "ID of the test tag. TestTag instances with the same ID are considered to be identical"
+        }
+      },
+      "additionalProperties": false
+    },
+    "testUri": {
+      "type": "string",
+      "description": "URI this TestItem is associated with. May be a file or directory"
+    },
+    "testError": {
+      "type": "string",
+      "description": "Optional error encountered while loading the test. Note that this is not a test result and should only be used to represent errors in test discovery, such as syntax errors"
+    }
+  }
+}
